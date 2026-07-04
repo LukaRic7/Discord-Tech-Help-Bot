@@ -46,12 +46,18 @@ function getRecentKey(userId, signature) {
  */
 function getSignature(message) {
     const text = message.content?.trim() || '';
+
     const attachments = [...message.attachments.values()]
-        .map(a => a.url)
+        .map(a => `${a.name || 'unknown'}:${a.size || 0}:${a.contentType || 'unknown'}`)
         .sort()
         .join('|');
 
-    return attachments ? `${text}::${attachments}` : text;
+    // If there are attachments, use them as primary fingerprint
+    if (attachments) {
+        return text ? `${text}::${attachments}` : attachments;
+    }
+
+    return text;
 }
 
 /**
