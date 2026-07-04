@@ -7,4 +7,11 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     working_dir: /app
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      TOKEN: ${TOKEN}
+      APP_ID: ${APP_ID}
+      PUBLIC_KEY: ${PUBLIC_KEY}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
     command: node src/index.js
