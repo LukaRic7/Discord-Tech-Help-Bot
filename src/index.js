@@ -6,6 +6,9 @@ if (process.env.NODE_ENV !== 'production') {
 const scamdetector = require('./spamdetector.js');
 const dynamicvoice = require('./dynamicvoice.js');
 
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("Has token:", !!process.env.DISCORD_TOKEN);
+
 // Create a client instance
 const client = new Client({
     intents: [
