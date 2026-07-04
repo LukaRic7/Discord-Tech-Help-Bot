@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, PermissionsBitField } = require("discord.js");
 
 // Channel to log alerts
 const ADMIN_LOG_CHANNEL_ID = '1523044769230753973';
@@ -9,7 +9,9 @@ const WATCH_CHANNEL_IDS = [
     '1398071065766527046',
     '1398074003133825145',
     '1398074511232073738',
-    '1398047215825457262'
+    '1398047215825457262',
+
+    '1523044769230753973'
 ];
 
 // Config
@@ -17,6 +19,7 @@ const WINDOW_MS = 60 * 1000;
 const THRESHOLD = 3;
 
 // In-memory stores
+// key: `${userId}:${signature}` -> recent message entries
 const recentMessages = new Map();
 // userId -> Set(signature)
 const flaggedUserSignatures = new Map();
@@ -26,6 +29,10 @@ const flaggedUserSignatures = new Map();
  */
 function isFlagged(userId, signature) {
     return flaggedUserSignatures.get(userId)?.has(signature);
+}
+
+function getRecentKey(userId, signature) {
+    return `${userId}:${signature}`;
 }
 
 /**
@@ -46,8 +53,19 @@ function getSignature(message) {
  */
 async function deleteMessageRef(messageId, channelId, guild) {
     try {
-        const channel = await guild.channels.fetch(channelId).catch(() => null);
-        if (!channel) return;
+        const channel = await guild.channels.fetch(channelId, { force: true }).catch(() => null);
+        if (!channel || !channel.isTextBased()) return;
+
+        const me = guild.members.me;
+        const canManageMessages = me?.permissionsIn(channel).has(PermissionsBitField.Flags.ManageMessages);
+
+        if (!canManageMessages) {
+            console.warn(`Bot lacks Manage Messages in channel ${channelId}`);
+            return;
+        }
+
+        const deleted = await channel.messages.delete(messageId).catch(() => null);
+        if (deleted) return;
 
         const msg = await channel.messages.fetch(messageId, { force: true }).catch(() => null);
         if (!msg) return;
@@ -89,20 +107,21 @@ module.exports = {
             const signature = getSignature(message);
             const now = Date.now();
             const user = message.author;
+            const recentKey = getRecentKey(user.id, signature);
 
             const userFlags = flaggedUserSignatures.get(user.id);
 
             if (userFlags?.has(signature)) {
-                // Only delete known spam pattern
+                // Only delete known spam pattern for this user
                 await message.delete().catch(() => {});
                 return;
             }
 
-            if (!recentMessages.has(signature)) {
-                recentMessages.set(signature, []);
+            if (!recentMessages.has(recentKey)) {
+                recentMessages.set(recentKey, []);
             }
 
-            const entries = recentMessages.get(signature);
+            const entries = recentMessages.get(recentKey);
 
             entries.push({
                 messageId: message.id,
@@ -113,7 +132,7 @@ module.exports = {
 
             // keep window clean
             const fresh = entries.filter(e => now - e.timestamp <= WINDOW_MS);
-            recentMessages.set(signature, fresh);
+            recentMessages.set(recentKey, fresh);
 
             const occurrences = fresh.length;
 
@@ -157,7 +176,7 @@ module.exports = {
 
                 // cleanup memory after window
                 setTimeout(() => {
-                    recentMessages.delete(signature);
+                    recentMessages.delete(recentKey);
                 }, WINDOW_MS);
             }
 
