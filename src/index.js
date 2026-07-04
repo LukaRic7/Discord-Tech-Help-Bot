@@ -1,6 +1,8 @@
 const { Client, GatewayIntentBits, EmbedBuilder, Embed } = require('discord.js');
 
-require('dotenv').config({ path: '../.env' });
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: '../.env' });
+}
 const scamdetector = require('./spamdetector.js');
 const dynamicvoice = require('./dynamicvoice.js');
 
