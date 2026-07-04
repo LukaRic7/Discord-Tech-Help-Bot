@@ -1,17 +1,23 @@
 const { EmbedBuilder, PermissionsBitField } = require("discord.js");
 
-// Channel to log alerts
-const ADMIN_LOG_CHANNEL_ID = '1523044769230753973';
+// Channel to log alerts (Official = 1523044769230753973, Development = 1523090640731377758)
+const ADMIN_LOG_CHANNEL_ID = '1523090640731377758';
 
 // Channels monitored for spam messages
 const WATCH_CHANNEL_IDS = [
+    // Official server
     '1398037281851445320',
     '1398071065766527046',
     '1398074003133825145',
     '1398074511232073738',
     '1398047215825457262',
+    '1523044769230753973',
 
-    '1523044769230753973'
+    // Development server
+    '1523090571651059752',
+    '1523090597588635688',
+    '1523090609211047936',
+    '1523090619692748943'
 ];
 
 // Config
